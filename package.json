@@ -3,6 +3,7 @@
   "version": "1.0.0",
   "private": true,
   "description": "Nova Wood — Production-Ready Furniture E-Commerce Platform",
+  "packageManager": "pnpm@9.15.4",
   "scripts": {
     "dev:backend": "pnpm --filter @nova-wood/backend dev",
     "dev:frontend": "pnpm --filter @nova-wood/frontend dev",
