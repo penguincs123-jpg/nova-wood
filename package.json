@@ -1,0 +1,36 @@
+{
+  "name": "nova-wood",
+  "version": "1.0.0",
+  "private": true,
+  "description": "Nova Wood — Production-Ready Furniture E-Commerce Platform",
+  "scripts": {
+    "dev:backend": "pnpm --filter @nova-wood/backend dev",
+    "dev:frontend": "pnpm --filter @nova-wood/frontend dev",
+    "dev:admin": "pnpm --filter @nova-wood/admin dev",
+    "build:all": "pnpm -r build",
+    "lint": "pnpm -r lint",
+    "type-check": "pnpm -r type-check",
+    "prisma:generate": "prisma generate --schema=./prisma/schema.prisma",
+    "prisma:migrate": "prisma migrate dev --schema=./prisma/schema.prisma",
+    "prisma:studio": "prisma studio --schema=./prisma/schema.prisma",
+    "prisma:seed": "ts-node prisma/seed.ts"
+  },
+  "devDependencies": {
+    "@types/bcryptjs": "^2.4.6",
+    "bcryptjs": "^2.4.3",
+    "dotenv": "^17.4.2",
+    "eslint": "^8.57.0",
+    "prettier": "^3.3.0",
+    "prisma": "^5.22.0",
+    "ts-node": "^10.9.2",
+    "tsconfig-paths": "^4.2.0",
+    "typescript": "^5.5.0"
+  },
+  "dependencies": {
+    "@prisma/client": "^5.22.0"
+  },
+  "engines": {
+    "node": ">=20.0.0",
+    "pnpm": ">=9.0.0"
+  }
+}

@@ -1,0 +1,209 @@
+/* =============================================================
+   Nova Wood — Admin Panel Stylesheet (Premium Dark Theme)
+   Modern administrative dashboard styling with cards, sidebar, and alerts.
+   ============================================================= */
+
+@import url('https://fonts.googleapis.com/css2?family=Outfit:wght@300;400;500;600;700;800&display=swap');
+
+:root {
+  --primary-color: #8B4513;
+  --secondary-color: #D2691E;
+  --accent-color: #F5DEB3;
+  --bg-color: #0f0f15;
+  --card-bg: #161624;
+  --sidebar-bg: #0b0b10;
+  --border-color: #222232;
+  --text-color: #ededf5;
+  --text-muted: #8b8b9f;
+  --white: #ffffff;
+  --success: #10b981;
+  --warning: #f59e0b;
+  --danger: #ef4444;
+  --shadow: 0 4px 20px rgba(0, 0, 0, 0.25);
+  --radius: 12px;
+  --font-sans: 'Outfit', sans-serif;
+  --transition: all 0.2s ease-in-out;
+}
+
+* {
+  box-sizing: border-box;
+  margin: 0;
+  padding: 0;
+}
+
+html {
+  font-family: var(--font-sans);
+  background-color: var(--bg-color);
+  color: var(--text-color);
+  overflow-x: hidden;
+}
+
+body {
+  min-height: 100vh;
+  display: flex;
+}
+
+a {
+  color: inherit;
+  text-decoration: none;
+}
+
+button {
+  cursor: pointer;
+}
+
+/* =============================================================
+   Layout Framework
+   ============================================================= */
+.admin-layout {
+  display: flex;
+  width: 100vw;
+  min-height: 100vh;
+}
+
+.sidebar {
+  width: 260px;
+  background-color: var(--sidebar-bg);
+  border-right: 1px solid var(--border-color);
+  padding: 32px 24px;
+  display: flex;
+  flex-direction: column;
+  gap: 32px;
+  flex-shrink: 0;
+}
+
+.main-content {
+  flex-grow: 1;
+  padding: 40px;
+  overflow-y: auto;
+}
+
+/* =============================================================
+   Sidebar Navigation
+   ============================================================= */
+.logo {
+  font-size: 22px;
+  font-weight: 800;
+  color: var(--white);
+  letter-spacing: -0.5px;
+}
+.logo span {
+  color: var(--secondary-color);
+}
+
+.nav-list {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  list-style: none;
+}
+
+.nav-link {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  padding: 12px 16px;
+  color: var(--text-muted);
+  font-weight: 500;
+  border-radius: var(--radius);
+  transition: var(--transition);
+}
+
+.nav-link:hover, .nav-link.active {
+  color: var(--white);
+  background-color: var(--card-bg);
+  transform: translateX(4px);
+}
+
+/* =============================================================
+   Dashboard Stats Cards
+   ============================================================= */
+.dashboard-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
+  gap: 24px;
+  margin-bottom: 40px;
+}
+
+.stat-card {
+  background-color: var(--card-bg);
+  border: 1px solid var(--border-color);
+  padding: 24px;
+  border-radius: var(--radius);
+  box-shadow: var(--shadow);
+}
+
+.stat-label {
+  font-size: 14px;
+  color: var(--text-muted);
+  margin-bottom: 8px;
+}
+
+.stat-value {
+  font-size: 28px;
+  font-weight: 700;
+  color: var(--white);
+}
+
+/* =============================================================
+   Tables & Data Grid
+   ============================================================= */
+.section-card {
+  background-color: var(--card-bg);
+  border: 1px solid var(--border-color);
+  padding: 32px;
+  border-radius: var(--radius);
+  box-shadow: var(--shadow);
+  margin-bottom: 40px;
+}
+
+.section-title {
+  font-size: 20px;
+  font-weight: 600;
+  margin-bottom: 24px;
+  color: var(--white);
+}
+
+.data-table {
+  width: 100%;
+  border-collapse: collapse;
+  text-align: left;
+}
+
+.data-table th, .data-table td {
+  padding: 16px;
+  border-bottom: 1px solid var(--border-color);
+}
+
+.data-table th {
+  color: var(--text-muted);
+  font-weight: 600;
+}
+
+.data-table tr:hover {
+  background-color: rgba(255, 255, 255, 0.02);
+}
+
+/* =============================================================
+   Badges
+   ============================================================= */
+.badge {
+  display: inline-flex;
+  padding: 4px 10px;
+  border-radius: 20px;
+  font-size: 12px;
+  font-weight: 600;
+}
+
+.badge-success { background-color: rgba(16, 185, 129, 0.15); color: var(--success); }
+.badge-warning { background-color: rgba(245, 158, 11, 0.15); color: var(--warning); }
+.badge-danger { background-color: rgba(239, 68, 68, 0.15); color: var(--danger); }
+.badge-info { background-color: rgba(139, 69, 19, 0.15); color: var(--accent-color); }
+
+/* Flex Utility */
+.flex { display: flex; }
+.justify-between { justify-content: space-between; }
+.items-center { align-items: center; }
+.gap-4 { gap: 16px; }
+.text-danger { color: var(--danger); }
+.text-muted { color: var(--text-muted); }

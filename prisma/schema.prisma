@@ -1,0 +1,912 @@
+// =============================================================
+// Nova Wood — Complete Prisma Schema
+// Database: MySQL (Hostinger)
+// ORM: Prisma v5
+// Supports: Multi-language, Multi-currency, Full E-Commerce
+// =============================================================
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "mysql"
+  url      = env("DATABASE_URL")
+}
+
+// =============================================================
+// ENUMS
+// =============================================================
+
+enum Role {
+  CUSTOMER
+  ADMIN
+  SUPER_ADMIN
+}
+
+enum OrderStatus {
+  PENDING
+  CONFIRMED
+  PROCESSING
+  SHIPPED
+  DELIVERED
+  CANCELLED
+  REFUNDED
+}
+
+enum PaymentStatus {
+  PENDING
+  PAID
+  FAILED
+  REFUNDED
+  PARTIALLY_REFUNDED
+}
+
+enum PaymentMethod {
+  CASH_ON_DELIVERY
+  CREDIT_CARD
+  PAYMOB
+  STRIPE
+  BANK_TRANSFER
+}
+
+enum CouponType {
+  PERCENTAGE
+  FIXED_AMOUNT
+  FREE_SHIPPING
+}
+
+enum ReviewStatus {
+  PENDING
+  APPROVED
+  REJECTED
+}
+
+enum MediaType {
+  IMAGE
+  VIDEO
+  DOCUMENT
+}
+
+enum PageType {
+  CMS
+  CATEGORY
+  PRODUCT
+  BLOG
+}
+
+enum SettingType {
+  STRING
+  NUMBER
+  BOOLEAN
+  JSON
+  COLOR
+  IMAGE
+}
+
+enum NotificationType {
+  ORDER_PLACED
+  ORDER_SHIPPED
+  ORDER_DELIVERED
+  ORDER_CANCELLED
+  REVIEW_APPROVED
+  REVIEW_REJECTED
+  PROMOTIONAL
+  SYSTEM
+}
+
+enum AddressType {
+  SHIPPING
+  BILLING
+  BOTH
+}
+
+// =============================================================
+// USER MANAGEMENT
+// =============================================================
+
+/// Platform users (customers, admins)
+model User {
+  id            String    @id @default(cuid())
+  email         String    @unique @db.VarChar(255)
+  emailVerified Boolean   @default(false)
+  phone         String?   @db.VarChar(20)
+  phoneVerified Boolean   @default(false)
+  password      String    @db.VarChar(255) // bcrypt hashed
+  role          Role      @default(CUSTOMER)
+  isActive      Boolean   @default(true)
+  avatar        String?   @db.VarChar(500)
+  createdAt     DateTime  @default(now())
+  updatedAt     DateTime  @updatedAt
+  lastLoginAt   DateTime?
+
+  // Relations
+  profile       UserProfile?
+  addresses     Address[]
+  orders        Order[]
+  cart          Cart?
+  wishlist      Wishlist[]
+  reviews       Review[]
+  notifications Notification[]
+  refreshTokens RefreshToken[]
+  auditLogs     AuditLog[]
+
+  @@index([email])
+  @@index([role])
+  @@map("users")
+}
+
+/// Extended user profile information
+model UserProfile {
+  id          String    @id @default(cuid())
+  userId      String    @unique
+  firstName   String?   @db.VarChar(100)
+  lastName    String?   @db.VarChar(100)
+  gender      String?   @db.VarChar(10)
+  dateOfBirth DateTime?
+  preferredLocale String @default("ar") @db.VarChar(5)
+  newsletterSubscribed Boolean @default(false)
+  createdAt   DateTime  @default(now())
+  updatedAt   DateTime  @updatedAt
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@map("user_profiles")
+}
+
+/// JWT refresh tokens for secure auth
+model RefreshToken {
+  id        String   @id @default(cuid())
+  userId    String
+  token     String   @unique @db.VarChar(500)
+  expiresAt DateTime
+  createdAt DateTime @default(now())
+  revokedAt DateTime?
+  userAgent String?  @db.VarChar(500)
+  ipAddress String?  @db.VarChar(45)
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@index([token])
+  @@index([userId])
+  @@map("refresh_tokens")
+}
+
+/// User delivery / billing addresses
+model Address {
+  id         String      @id @default(cuid())
+  userId     String
+  type       AddressType @default(SHIPPING)
+  label      String      @db.VarChar(100) // e.g. "Home", "Work"
+  firstName  String      @db.VarChar(100)
+  lastName   String      @db.VarChar(100)
+  phone      String      @db.VarChar(20)
+  country    String      @db.VarChar(100)
+  city       String      @db.VarChar(100)
+  state      String?     @db.VarChar(100)
+  street     String      @db.VarChar(255)
+  building   String?     @db.VarChar(100)
+  apartment  String?     @db.VarChar(100)
+  postalCode String?     @db.VarChar(20)
+  isDefault  Boolean     @default(false)
+  createdAt  DateTime    @default(now())
+  updatedAt  DateTime    @updatedAt
+
+  user   User    @relation(fields: [userId], references: [id], onDelete: Cascade)
+  orders Order[]
+
+  @@index([userId])
+  @@map("addresses")
+}
+
+// =============================================================
+// CATALOG — CATEGORIES
+// =============================================================
+
+/// Product categories with unlimited nesting
+model Category {
+  id          String   @id @default(cuid())
+  slug        String   @unique @db.VarChar(255)
+  parentId    String?
+  imageUrl    String?  @db.VarChar(500)
+  iconUrl     String?  @db.VarChar(500)
+  isActive    Boolean  @default(true)
+  isFeatured  Boolean  @default(false)
+  sortOrder   Int      @default(0)
+  metaRobots  String   @default("index,follow") @db.VarChar(50)
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+
+  // Self-relation for nesting
+  parent   Category?  @relation("CategoryHierarchy", fields: [parentId], references: [id])
+  children Category[] @relation("CategoryHierarchy")
+
+  // Relations
+  translations CategoryTranslation[]
+  products     Product[]
+
+  @@index([parentId])
+  @@index([slug])
+  @@map("categories")
+}
+
+/// Multilingual content for categories
+model CategoryTranslation {
+  id             String @id @default(cuid())
+  categoryId     String
+  locale         String @db.VarChar(5) // "ar", "en"
+  name           String @db.VarChar(255)
+  description    String? @db.Text
+  metaTitle      String? @db.VarChar(255)
+  metaDescription String? @db.VarChar(500)
+
+  category Category @relation(fields: [categoryId], references: [id], onDelete: Cascade)
+
+  @@unique([categoryId, locale])
+  @@index([categoryId])
+  @@map("category_translations")
+}
+
+// =============================================================
+// CATALOG — BRANDS
+// =============================================================
+
+/// Product brands
+model Brand {
+  id        String   @id @default(cuid())
+  slug      String   @unique @db.VarChar(255)
+  logoUrl   String?  @db.VarChar(500)
+  websiteUrl String? @db.VarChar(500)
+  isActive  Boolean  @default(true)
+  sortOrder Int      @default(0)
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  translations BrandTranslation[]
+  products     Product[]
+
+  @@index([slug])
+  @@map("brands")
+}
+
+/// Multilingual content for brands
+model BrandTranslation {
+  id          String  @id @default(cuid())
+  brandId     String
+  locale      String  @db.VarChar(5)
+  name        String  @db.VarChar(255)
+  description String? @db.Text
+
+  brand Brand @relation(fields: [brandId], references: [id], onDelete: Cascade)
+
+  @@unique([brandId, locale])
+  @@map("brand_translations")
+}
+
+// =============================================================
+// CATALOG — PRODUCTS
+// =============================================================
+
+/// Core product entity
+model Product {
+  id              String   @id @default(cuid())
+  sku             String   @unique @db.VarChar(100)
+  slug            String   @unique @db.VarChar(255)
+  categoryId      String?
+  brandId         String?
+  basePrice       Decimal  @db.Decimal(10, 2)
+  salePrice       Decimal? @db.Decimal(10, 2)
+  salePriceEndsAt DateTime?
+  costPrice       Decimal? @db.Decimal(10, 2) // for profit calculation
+  currency        String   @default("EGP") @db.VarChar(3)
+  stockQty        Int      @default(0)
+  lowStockThreshold Int    @default(5)
+  weight          Decimal? @db.Decimal(8, 2) // kg
+  dimensionLength Decimal? @db.Decimal(8, 2) // cm
+  dimensionWidth  Decimal? @db.Decimal(8, 2)
+  dimensionHeight Decimal? @db.Decimal(8, 2)
+  isActive        Boolean  @default(true)
+  isFeatured      Boolean  @default(false)
+  isNew           Boolean  @default(false)
+  isBestSeller    Boolean  @default(false)
+  hasVariants     Boolean  @default(false)
+  averageRating   Decimal  @default(0) @db.Decimal(3, 2)
+  reviewCount     Int      @default(0)
+  soldCount       Int      @default(0)
+  viewCount       Int      @default(0)
+  metaRobots      String   @default("index,follow") @db.VarChar(50)
+  createdAt       DateTime @default(now())
+  updatedAt       DateTime @updatedAt
+  publishedAt     DateTime?
+
+  // Relations
+  category     Category?            @relation(fields: [categoryId], references: [id], onDelete: SetNull)
+  brand        Brand?               @relation(fields: [brandId], references: [id], onDelete: SetNull)
+  translations ProductTranslation[]
+  images       ProductImage[]
+  variants     ProductVariant[]
+  tags         ProductTag[]
+  reviews      Review[]
+  wishlistItems Wishlist[]
+  cartItems    CartItem[]
+  orderItems   OrderItem[]
+  relatedFrom  RelatedProduct[]     @relation("RelatedFrom")
+  relatedTo    RelatedProduct[]     @relation("RelatedTo")
+
+  @@index([slug])
+  @@index([categoryId])
+  @@index([brandId])
+  @@index([isActive, isFeatured])
+  @@index([isActive, isNew])
+  @@index([isActive, isBestSeller])
+  @@index([basePrice])
+  @@index([createdAt])
+  @@map("products")
+}
+
+/// Multilingual content for products
+model ProductTranslation {
+  id               String @id @default(cuid())
+  productId        String
+  locale           String @db.VarChar(5)
+  name             String @db.VarChar(255)
+  shortDescription String? @db.Text
+  description      String? @db.LongText
+  features         String? @db.Text // JSON array of bullet points
+  materials        String? @db.Text
+  careInstructions String? @db.Text
+  metaTitle        String? @db.VarChar(255)
+  metaDescription  String? @db.VarChar(500)
+  metaKeywords     String? @db.VarChar(500)
+
+  product Product @relation(fields: [productId], references: [id], onDelete: Cascade)
+
+  @@unique([productId, locale])
+  @@index([productId])
+  @@map("product_translations")
+}
+
+/// Product images (supports main + gallery)
+model ProductImage {
+  id        String   @id @default(cuid())
+  productId String
+  variantId String?
+  url       String   @db.VarChar(500) // original or WebP
+  urlWebp   String?  @db.VarChar(500)
+  urlAvif   String?  @db.VarChar(500)
+  altText   String?  @db.VarChar(255)
+  width     Int?
+  height    Int?
+  isMain    Boolean  @default(false)
+  sortOrder Int      @default(0)
+  createdAt DateTime @default(now())
+
+  product Product         @relation(fields: [productId], references: [id], onDelete: Cascade)
+  variant ProductVariant? @relation(fields: [variantId], references: [id], onDelete: SetNull)
+
+  @@index([productId])
+  @@map("product_images")
+}
+
+/// Product variants (color, size, material, etc.)
+model ProductVariant {
+  id         String   @id @default(cuid())
+  productId  String
+  sku        String   @unique @db.VarChar(100)
+  price      Decimal? @db.Decimal(10, 2) // overrides base price if set
+  salePrice  Decimal? @db.Decimal(10, 2)
+  stockQty   Int      @default(0)
+  isActive   Boolean  @default(true)
+  sortOrder  Int      @default(0)
+  // Variant attributes stored as JSON: {"color": "Oak Brown", "size": "L", "material": "Teak"}
+  attributes Json
+  createdAt  DateTime @default(now())
+  updatedAt  DateTime @updatedAt
+
+  product   Product        @relation(fields: [productId], references: [id], onDelete: Cascade)
+  images    ProductImage[]
+  cartItems CartItem[]
+  orderItems OrderItem[]
+
+  @@index([productId])
+  @@map("product_variants")
+}
+
+/// Tags for products (for filtering & SEO)
+model Tag {
+  id        String       @id @default(cuid())
+  slug      String       @unique @db.VarChar(100)
+  name      String       @db.VarChar(100)
+  locale    String       @default("ar") @db.VarChar(5)
+  products  ProductTag[]
+  createdAt DateTime     @default(now())
+
+  @@map("tags")
+}
+
+/// Many-to-many: Products <-> Tags
+model ProductTag {
+  productId String
+  tagId     String
+
+  product Product @relation(fields: [productId], references: [id], onDelete: Cascade)
+  tag     Tag     @relation(fields: [tagId], references: [id], onDelete: Cascade)
+
+  @@id([productId, tagId])
+  @@map("product_tags")
+}
+
+/// Related products cross-sell
+model RelatedProduct {
+  fromProductId String
+  toProductId   String
+  sortOrder     Int    @default(0)
+
+  from Product @relation("RelatedFrom", fields: [fromProductId], references: [id], onDelete: Cascade)
+  to   Product @relation("RelatedTo", fields: [toProductId], references: [id], onDelete: Cascade)
+
+  @@id([fromProductId, toProductId])
+  @@map("related_products")
+}
+
+// =============================================================
+// SHOPPING — CART
+// =============================================================
+
+/// Shopping cart (supports guest & authenticated users)
+model Cart {
+  id          String   @id @default(cuid())
+  userId      String?  @unique
+  sessionId   String?  @unique @db.VarChar(255) // for guest carts
+  couponId    String?
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+  expiresAt   DateTime?
+
+  user   User?      @relation(fields: [userId], references: [id], onDelete: Cascade)
+  coupon Coupon?    @relation(fields: [couponId], references: [id], onDelete: SetNull)
+  items  CartItem[]
+
+  @@index([sessionId])
+  @@map("carts")
+}
+
+/// Individual cart line items
+model CartItem {
+  id        String   @id @default(cuid())
+  cartId    String
+  productId String
+  variantId String?
+  quantity  Int
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  cart    Cart            @relation(fields: [cartId], references: [id], onDelete: Cascade)
+  product Product         @relation(fields: [productId], references: [id], onDelete: Cascade)
+  variant ProductVariant? @relation(fields: [variantId], references: [id], onDelete: SetNull)
+
+  @@index([cartId])
+  @@map("cart_items")
+}
+
+// =============================================================
+// SHOPPING — WISHLIST
+// =============================================================
+
+/// User wishlist items
+model Wishlist {
+  id        String   @id @default(cuid())
+  userId    String
+  productId String
+  createdAt DateTime @default(now())
+
+  user    User    @relation(fields: [userId], references: [id], onDelete: Cascade)
+  product Product @relation(fields: [productId], references: [id], onDelete: Cascade)
+
+  @@unique([userId, productId])
+  @@index([userId])
+  @@map("wishlists")
+}
+
+// =============================================================
+// ORDERS
+// =============================================================
+
+/// Customer orders
+model Order {
+  id                 String        @id @default(cuid())
+  orderNumber        String        @unique @db.VarChar(50) // e.g. NW-2026-00001
+  userId             String?
+  guestEmail         String?       @db.VarChar(255)
+  guestPhone         String?       @db.VarChar(20)
+  addressId          String?
+  couponId           String?
+  status             OrderStatus   @default(PENDING)
+  paymentStatus      PaymentStatus @default(PENDING)
+  paymentMethod      PaymentMethod @default(CASH_ON_DELIVERY)
+  paymentReference   String?       @db.VarChar(255)
+  currency           String        @default("EGP") @db.VarChar(3)
+  subtotal           Decimal       @db.Decimal(10, 2)
+  discountAmount     Decimal       @default(0) @db.Decimal(10, 2)
+  shippingAmount     Decimal       @default(0) @db.Decimal(10, 2)
+  taxAmount          Decimal       @default(0) @db.Decimal(10, 2)
+  total              Decimal       @db.Decimal(10, 2)
+  // Snapshot of address at time of order
+  shippingAddress    Json
+  notes              String?       @db.Text
+  adminNotes         String?       @db.Text
+  trackingNumber     String?       @db.VarChar(255)
+  shippingZoneId     String?
+  estimatedDelivery  DateTime?
+  deliveredAt        DateTime?
+  cancelledAt        DateTime?
+  cancelReason       String?       @db.Text
+  createdAt          DateTime      @default(now())
+  updatedAt          DateTime      @updatedAt
+
+  user         User?          @relation(fields: [userId], references: [id], onDelete: SetNull)
+  address      Address?       @relation(fields: [addressId], references: [id], onDelete: SetNull)
+  coupon       Coupon?        @relation(fields: [couponId], references: [id], onDelete: SetNull)
+  shippingZone ShippingZone?  @relation(fields: [shippingZoneId], references: [id], onDelete: SetNull)
+  items        OrderItem[]
+  statusHistory OrderStatusHistory[]
+
+  @@index([userId])
+  @@index([status])
+  @@index([orderNumber])
+  @@index([createdAt])
+  @@map("orders")
+}
+
+/// Individual items within an order
+model OrderItem {
+  id        String   @id @default(cuid())
+  orderId   String
+  productId String?
+  variantId String?
+  quantity  Int
+  unitPrice Decimal  @db.Decimal(10, 2)
+  totalPrice Decimal @db.Decimal(10, 2)
+  // Full product snapshot at time of purchase (immutable record)
+  snapshot  Json
+
+  order   Order           @relation(fields: [orderId], references: [id], onDelete: Cascade)
+  product Product?        @relation(fields: [productId], references: [id], onDelete: SetNull)
+  variant ProductVariant? @relation(fields: [variantId], references: [id], onDelete: SetNull)
+
+  @@index([orderId])
+  @@map("order_items")
+}
+
+/// Order status change history
+model OrderStatusHistory {
+  id        String      @id @default(cuid())
+  orderId   String
+  status    OrderStatus
+  note      String?     @db.Text
+  createdBy String?     // admin user ID
+  createdAt DateTime    @default(now())
+
+  order Order @relation(fields: [orderId], references: [id], onDelete: Cascade)
+
+  @@index([orderId])
+  @@map("order_status_history")
+}
+
+// =============================================================
+// PROMOTIONS — COUPONS
+// =============================================================
+
+/// Discount coupons
+model Coupon {
+  id              String     @id @default(cuid())
+  code            String     @unique @db.VarChar(50)
+  type            CouponType
+  value           Decimal    @db.Decimal(10, 2) // % or fixed amount
+  minOrderAmount  Decimal?   @db.Decimal(10, 2)
+  maxDiscountAmount Decimal? @db.Decimal(10, 2) // cap for percentage coupons
+  usageLimit      Int?       // max total uses
+  usageLimitPerUser Int?     // max uses per user
+  usedCount       Int        @default(0)
+  isActive        Boolean    @default(true)
+  startsAt        DateTime?
+  expiresAt       DateTime?
+  createdAt       DateTime   @default(now())
+  updatedAt       DateTime   @updatedAt
+
+  carts  Cart[]
+  orders Order[]
+
+  @@index([code])
+  @@map("coupons")
+}
+
+// =============================================================
+// REVIEWS
+// =============================================================
+
+/// Product reviews with moderation
+model Review {
+  id         String       @id @default(cuid())
+  userId     String
+  productId  String
+  rating     Int          // 1-5
+  title      String?      @db.VarChar(255)
+  body       String       @db.Text
+  status     ReviewStatus @default(PENDING)
+  isVerified Boolean      @default(false) // purchased product
+  helpfulCount Int        @default(0)
+  images     String?      @db.Text // JSON array of image URLs
+  adminReply String?      @db.Text
+  createdAt  DateTime     @default(now())
+  updatedAt  DateTime     @updatedAt
+
+  user    User    @relation(fields: [userId], references: [id], onDelete: Cascade)
+  product Product @relation(fields: [productId], references: [id], onDelete: Cascade)
+
+  @@unique([userId, productId])
+  @@index([productId, status])
+  @@map("reviews")
+}
+
+// =============================================================
+// CMS — PAGES, SLIDERS, SECTIONS
+// =============================================================
+
+/// CMS pages (About, Contact, etc.)
+model Page {
+  id         String   @id @default(cuid())
+  slug       String   @unique @db.VarChar(255)
+  type       PageType @default(CMS)
+  isActive   Boolean  @default(true)
+  sortOrder  Int      @default(0)
+  showInMenu Boolean  @default(false)
+  createdAt  DateTime @default(now())
+  updatedAt  DateTime @updatedAt
+
+  translations PageTranslation[]
+
+  @@map("pages")
+}
+
+/// Multilingual content for CMS pages
+model PageTranslation {
+  id              String  @id @default(cuid())
+  pageId          String
+  locale          String  @db.VarChar(5)
+  title           String  @db.VarChar(255)
+  content         String? @db.LongText // rich HTML from TipTap
+  excerpt         String? @db.Text
+  metaTitle       String? @db.VarChar(255)
+  metaDescription String? @db.VarChar(500)
+  metaKeywords    String? @db.VarChar(500)
+
+  page Page @relation(fields: [pageId], references: [id], onDelete: Cascade)
+
+  @@unique([pageId, locale])
+  @@map("page_translations")
+}
+
+/// Hero sliders on homepage
+model Slider {
+  id        String   @id @default(cuid())
+  name      String   @db.VarChar(255) // internal name for admin
+  isActive  Boolean  @default(true)
+  sortOrder Int      @default(0)
+  autoplay  Boolean  @default(true)
+  interval  Int      @default(5000) // ms
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  translations SliderTranslation[]
+
+  @@map("sliders")
+}
+
+/// Multilingual slider content
+model SliderTranslation {
+  id           String  @id @default(cuid())
+  sliderId     String
+  locale       String  @db.VarChar(5)
+  title        String? @db.VarChar(255)
+  subtitle     String? @db.VarChar(500)
+  ctaText      String? @db.VarChar(100)
+  ctaUrl       String? @db.VarChar(500)
+  imageUrl     String  @db.VarChar(500)
+  imageUrlWebp String? @db.VarChar(500)
+  imageUrlAvif String? @db.VarChar(500)
+  imageAlt     String? @db.VarChar(255)
+  mobileImageUrl String? @db.VarChar(500)
+  bgColor      String? @db.VarChar(20) // hex — from theme system
+
+  slider Slider @relation(fields: [sliderId], references: [id], onDelete: Cascade)
+
+  @@unique([sliderId, locale])
+  @@map("slider_translations")
+}
+
+/// Homepage & sitewide banners
+model Banner {
+  id          String   @id @default(cuid())
+  placement   String   @db.VarChar(100) // e.g. "homepage_top", "sidebar", "category_top"
+  isActive    Boolean  @default(true)
+  sortOrder   Int      @default(0)
+  startsAt    DateTime?
+  expiresAt   DateTime?
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+
+  translations BannerTranslation[]
+
+  @@map("banners")
+}
+
+/// Multilingual banner content
+model BannerTranslation {
+  id           String  @id @default(cuid())
+  bannerId     String
+  locale       String  @db.VarChar(5)
+  title        String? @db.VarChar(255)
+  subtitle     String? @db.VarChar(500)
+  ctaText      String? @db.VarChar(100)
+  ctaUrl       String? @db.VarChar(500)
+  imageUrl     String  @db.VarChar(500)
+  imageUrlWebp String? @db.VarChar(500)
+  imageUrlAvif String? @db.VarChar(500)
+  imageAlt     String? @db.VarChar(255)
+
+  banner Banner @relation(fields: [bannerId], references: [id], onDelete: Cascade)
+
+  @@unique([bannerId, locale])
+  @@map("banner_translations")
+}
+
+// =============================================================
+// MEDIA LIBRARY
+// =============================================================
+
+/// Central media library for all uploaded files
+model Media {
+  id         String    @id @default(cuid())
+  filename   String    @db.VarChar(255)
+  originalName String  @db.VarChar(255)
+  url        String    @db.VarChar(500)
+  urlWebp    String?   @db.VarChar(500)
+  urlAvif    String?   @db.VarChar(500)
+  mimeType   String    @db.VarChar(100)
+  type       MediaType @default(IMAGE)
+  size       Int       // bytes
+  width      Int?
+  height     Int?
+  altText    String?   @db.VarChar(255)
+  uploadedBy String?
+  folder     String?   @db.VarChar(255) // virtual folder
+  createdAt  DateTime  @default(now())
+
+  @@index([type])
+  @@index([folder])
+  @@map("media")
+}
+
+// =============================================================
+// SHIPPING & TAXES
+// =============================================================
+
+/// Shipping zones (geographic areas)
+model ShippingZone {
+  id        String   @id @default(cuid())
+  name      String   @db.VarChar(255)
+  countries String   @db.Text // JSON array of country codes
+  cities    String?  @db.Text // JSON array of cities
+  isActive  Boolean  @default(true)
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  rates  ShippingRate[]
+  orders Order[]
+
+  @@map("shipping_zones")
+}
+
+/// Shipping rates per zone
+model ShippingRate {
+  id             String   @id @default(cuid())
+  zoneId         String
+  name           String   @db.VarChar(255) // e.g. "Standard Delivery"
+  price          Decimal  @db.Decimal(10, 2)
+  minWeight      Decimal? @db.Decimal(8, 2)
+  maxWeight      Decimal? @db.Decimal(8, 2)
+  minOrderAmount Decimal? @db.Decimal(10, 2)
+  freeShippingThreshold Decimal? @db.Decimal(10, 2)
+  estimatedDays  String?  @db.VarChar(50) // e.g. "3-5 days"
+  isActive       Boolean  @default(true)
+  createdAt      DateTime @default(now())
+  updatedAt      DateTime @updatedAt
+
+  zone ShippingZone @relation(fields: [zoneId], references: [id], onDelete: Cascade)
+
+  @@index([zoneId])
+  @@map("shipping_rates")
+}
+
+/// Tax rules
+model Tax {
+  id         String   @id @default(cuid())
+  name       String   @db.VarChar(255)
+  rate       Decimal  @db.Decimal(5, 2) // percentage, e.g. 14.00
+  country    String?  @db.VarChar(2)   // ISO country code
+  isInclusive Boolean @default(false)  // price includes tax?
+  isActive   Boolean  @default(true)
+  createdAt  DateTime @default(now())
+  updatedAt  DateTime @updatedAt
+
+  @@map("taxes")
+}
+
+// =============================================================
+// SETTINGS — EVERYTHING FROM ADMIN
+// =============================================================
+
+/// Global site settings — everything configurable from admin
+model Setting {
+  id          String      @id @default(cuid())
+  key         String      @unique @db.VarChar(255)
+  value       String?     @db.LongText
+  type        SettingType @default(STRING)
+  group       String      @db.VarChar(100) // e.g. "general", "seo", "theme", "social"
+  label       String      @db.VarChar(255)
+  description String?     @db.Text
+  isPublic    Boolean     @default(true) // exposed to frontend
+  createdAt   DateTime    @default(now())
+  updatedAt   DateTime    @updatedAt
+
+  @@index([group])
+  @@index([key])
+  @@map("settings")
+}
+
+// =============================================================
+// NOTIFICATIONS
+// =============================================================
+
+/// User notifications
+model Notification {
+  id        String           @id @default(cuid())
+  userId    String
+  type      NotificationType
+  title     String           @db.VarChar(255)
+  message   String           @db.Text
+  data      Json?            // extra payload (orderId, etc.)
+  isRead    Boolean          @default(false)
+  readAt    DateTime?
+  createdAt DateTime         @default(now())
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@index([userId, isRead])
+  @@map("notifications")
+}
+
+// =============================================================
+// AUDIT LOG
+// =============================================================
+
+/// Audit trail for all admin actions
+model AuditLog {
+  id         String   @id @default(cuid())
+  userId     String?
+  action     String   @db.VarChar(100) // CREATE, UPDATE, DELETE
+  entity     String   @db.VarChar(100) // Product, Order, User, etc.
+  entityId   String?  @db.VarChar(100)
+  changes    Json?    // before/after snapshot
+  ipAddress  String?  @db.VarChar(45)
+  userAgent  String?  @db.VarChar(500)
+  createdAt  DateTime @default(now())
+
+  user User? @relation(fields: [userId], references: [id], onDelete: SetNull)
+
+  @@index([userId])
+  @@index([entity, entityId])
+  @@index([createdAt])
+  @@map("audit_logs")
+}
