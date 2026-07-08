@@ -1,45 +1,54 @@
 /**
- * Nova Wood - Root Server Entry Point for Hostinger
- * Starts the Next.js frontend using next start (no standalone mode).
+ * Nova Wood - Hostinger Entry Point
+ * Starts the Next.js frontend app via child_process to avoid module resolution issues.
  */
 'use strict';
 
-const { execSync } = require('child_process');
+const { spawn } = require('child_process');
 const path = require('path');
 
-const frontendDir = path.join(__dirname, 'apps/frontend');
+const PORT = process.env.PORT || '3000';
+const HOST = process.env.HOSTNAME || '0.0.0.0';
+const frontendDir = path.join(__dirname, 'apps', 'frontend');
 
-process.env.PORT = process.env.PORT || '3000';
-process.env.HOSTNAME = process.env.HOSTNAME || '0.0.0.0';
+console.log('[Nova Wood] Starting Next.js on port', PORT);
+console.log('[Nova Wood] Frontend dir:', frontendDir);
 
-console.log('[Nova Wood] Starting Next.js frontend...');
-console.log('[Nova Wood] Port:', process.env.PORT);
+// Try to find next binary
+const nextBin = [
+  path.join(__dirname, 'node_modules', '.bin', 'next'),
+  path.join(frontendDir, 'node_modules', '.bin', 'next'),
+  'next', // fallback to PATH
+].find(bin => {
+  try {
+    const fs = require('fs');
+    return bin === 'next' || fs.existsSync(bin);
+  } catch { return false; }
+}) || 'next';
 
-// Use require to start next server directly
-const nextPath = path.join(frontendDir, 'node_modules', 'next', 'dist', 'server', 'next.js');
-const http = require('http');
-const { parse } = require('url');
+console.log('[Nova Wood] Using next binary:', nextBin);
 
-let nextApp;
-try {
-  const next = require(path.join(frontendDir, 'node_modules', 'next'));
-  nextApp = next({ dev: false, dir: frontendDir, port: parseInt(process.env.PORT, 10) });
-} catch (e) {
-  console.error('[Nova Wood] Failed to load next:', e.message);
+const child = spawn(nextBin, ['start', '-p', PORT, '-H', HOST], {
+  cwd: frontendDir,
+  stdio: 'inherit',
+  shell: true,
+  env: { ...process.env, PORT, HOSTNAME: HOST },
+});
+
+child.on('error', (err) => {
+  console.error('[Nova Wood] Failed to start server:', err.message);
   process.exit(1);
-}
+});
 
-const handle = nextApp.getRequestHandler();
+child.on('exit', (code) => {
+  console.log('[Nova Wood] Server exited with code:', code);
+  process.exit(code || 0);
+});
 
-nextApp.prepare().then(() => {
-  http.createServer((req, res) => {
-    const parsedUrl = parse(req.url, true);
-    handle(req, res, parsedUrl);
-  }).listen(parseInt(process.env.PORT, 10), process.env.HOSTNAME, (err) => {
-    if (err) throw err;
-    console.log(`[Nova Wood] Ready on http://${process.env.HOSTNAME}:${process.env.PORT}`);
+// Forward signals
+['SIGTERM', 'SIGINT'].forEach(sig => {
+  process.on(sig, () => {
+    console.log('[Nova Wood] Received', sig, '- shutting down...');
+    child.kill(sig);
   });
-}).catch((err) => {
-  console.error('[Nova Wood] Failed to start:', err);
-  process.exit(1);
 });
