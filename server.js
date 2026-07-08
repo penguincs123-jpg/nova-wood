@@ -20,5 +20,8 @@ if (!fs.existsSync(standaloneServer)) {
 process.env.PORT = process.env.PORT || '3000';
 process.env.HOSTNAME = process.env.HOSTNAME || '0.0.0.0';
 
+console.log('[Nova Wood] Changing working directory to standalone folder');
+process.chdir(path.join(__dirname, 'apps/frontend/.next/standalone'));
+
 console.log('[Nova Wood] Starting Next.js frontend from:', standaloneServer);
 require(standaloneServer);
