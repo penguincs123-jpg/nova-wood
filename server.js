@@ -1,27 +1,45 @@
 /**
- * Nova Wood - Root Server Entry Point
- * This file is the entry point for Hostinger Node.js hosting.
- * It loads the Next.js standalone server built during deployment.
+ * Nova Wood - Root Server Entry Point for Hostinger
+ * Starts the Next.js frontend using next start (no standalone mode).
  */
 'use strict';
 
+const { execSync } = require('child_process');
 const path = require('path');
-const fs = require('fs');
 
-const standaloneServer = path.join(__dirname, 'apps/frontend/.next/standalone/apps/frontend/server.js');
+const frontendDir = path.join(__dirname, 'apps/frontend');
 
-if (!fs.existsSync(standaloneServer)) {
-  console.error('[Nova Wood] ERROR: Standalone server not found at:', standaloneServer);
-  console.error('[Nova Wood] Make sure the build completed successfully.');
-  process.exit(1);
-}
-
-// Set environment defaults if not already set
 process.env.PORT = process.env.PORT || '3000';
 process.env.HOSTNAME = process.env.HOSTNAME || '0.0.0.0';
 
-console.log('[Nova Wood] Changing working directory to standalone folder');
-process.chdir(path.join(__dirname, 'apps/frontend/.next/standalone'));
+console.log('[Nova Wood] Starting Next.js frontend...');
+console.log('[Nova Wood] Port:', process.env.PORT);
 
-console.log('[Nova Wood] Starting Next.js frontend from:', standaloneServer);
-require(standaloneServer);
+// Use require to start next server directly
+const nextPath = path.join(frontendDir, 'node_modules', 'next', 'dist', 'server', 'next.js');
+const http = require('http');
+const { parse } = require('url');
+
+let nextApp;
+try {
+  const next = require(path.join(frontendDir, 'node_modules', 'next'));
+  nextApp = next({ dev: false, dir: frontendDir, port: parseInt(process.env.PORT, 10) });
+} catch (e) {
+  console.error('[Nova Wood] Failed to load next:', e.message);
+  process.exit(1);
+}
+
+const handle = nextApp.getRequestHandler();
+
+nextApp.prepare().then(() => {
+  http.createServer((req, res) => {
+    const parsedUrl = parse(req.url, true);
+    handle(req, res, parsedUrl);
+  }).listen(parseInt(process.env.PORT, 10), process.env.HOSTNAME, (err) => {
+    if (err) throw err;
+    console.log(`[Nova Wood] Ready on http://${process.env.HOSTNAME}:${process.env.PORT}`);
+  });
+}).catch((err) => {
+  console.error('[Nova Wood] Failed to start:', err);
+  process.exit(1);
+});
