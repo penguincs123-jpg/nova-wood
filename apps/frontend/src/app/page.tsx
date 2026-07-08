@@ -226,7 +226,7 @@ export default async function Home() {
                           <span className="price-current">{product.basePrice} {t.currency}</span>
                         )}
                       </div>
-                      <button className="btn btn-primary btn-sm">{t.addToCart}</button>
+                      <a href={`/products/${product.slug}`} className="btn btn-primary btn-sm">{t.addToCart}</a>
                     </div>
                   </div>
                 </div>

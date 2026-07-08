@@ -165,9 +165,9 @@ export default async function RootLayout({
             </nav>
 
             <div className="header-actions">
-              <button className="icon-btn" aria-label="Wishlist">❤️</button>
-              <button className="icon-btn" aria-label="Cart">🛒</button>
-              <button className="icon-btn" aria-label="Account">👤</button>
+              <a href="/wishlist" className="icon-btn" aria-label="Wishlist">❤️</a>
+              <a href="/cart" className="icon-btn" aria-label="Cart">🛒</a>
+              <a href="/account" className="icon-btn" aria-label="Account">👤</a>
             </div>
           </div>
         </header>
