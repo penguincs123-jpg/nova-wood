@@ -7,9 +7,10 @@ interface CartButtonProps {
   product: Omit<CartItem, 'id' | 'quantity'>;
   label?: string;
   className?: string;
+  style?: React.CSSProperties;
 }
 
-export default function CartButton({ product, label = 'أضف إلى السلة', className = 'btn btn-primary' }: CartButtonProps) {
+export default function CartButton({ product, label = 'أضف إلى السلة', className = 'btn btn-primary', style }: CartButtonProps) {
   const { addItem, isInCart } = useCart();
   const [added, setAdded] = useState(false);
 
@@ -28,6 +29,7 @@ export default function CartButton({ product, label = 'أضف إلى السلة'
       className={className}
       onClick={handleAdd}
       style={{
+        ...style,
         transition: 'all 0.2s ease',
         backgroundColor: added ? 'var(--success, #16a34a)' : undefined,
       }}
