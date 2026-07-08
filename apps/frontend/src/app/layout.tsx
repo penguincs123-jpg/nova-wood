@@ -158,10 +158,10 @@ export default async function RootLayout({
 
             <nav className="nav-menu">
               <a href="/">{t.home}</a>
-              <a href="/categories/office-furniture">{t.office}</a>
-              <a href="/categories/living-room">{t.living}</a>
-              <a href="/categories/bedroom">{t.bedroom}</a>
-              <a href="/categories/dining-room">{t.dining}</a>
+              <a href="/products?category=office-furniture">{t.office}</a>
+              <a href="/products?category=living-room">{t.living}</a>
+              <a href="/products?category=bedroom">{t.bedroom}</a>
+              <a href="/products?category=dining-room">{t.dining}</a>
             </nav>
 
             <div className="header-actions">

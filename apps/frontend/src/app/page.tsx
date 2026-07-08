@@ -120,7 +120,7 @@ export default async function Home() {
           <p className="hero-subtitle">أثاث خشبي راقٍ مصنوع يدوياً ليجمع بين الفخامة والراحة</p>
           <div className="hero-ctas">
             <a href="/products" className="btn btn-primary animate-hover">اكتشف المجموعة</a>
-            <a href="/about" className="btn btn-secondary animate-hover">قصتنا</a>
+            <a href="/pages/about" className="btn btn-secondary animate-hover">قصتنا</a>
           </div>
         </div>
       </section>
@@ -164,7 +164,7 @@ export default async function Home() {
 
           <div className="grid grid-cols-3">
             {categories.map((cat: Category) => (
-              <a href={`/categories/${cat.slug}`} key={cat.id} className="category-card card">
+              <a href={`/products?category=${cat.slug}`} key={cat.id} className="category-card card">
                 <div className="category-image">
                   <Image
                     src={cat.imageUrl || 'https://images.unsplash.com/photo-1524758631624-e2822e304c36?q=80&w=600'}
