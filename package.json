@@ -7,7 +7,7 @@
     "dev:backend": "pnpm --filter @nova-wood/backend dev",
     "dev:frontend": "pnpm --filter @nova-wood/frontend dev",
     "dev:admin": "pnpm --filter @nova-wood/admin dev",
-    "build:all": "npm install pnpm && npx pnpm install && npx pnpm -r build",
+    "build:all": "npm install pnpm && npx pnpm install && npx pnpm -r build && mkdir -p apps/frontend/.next/standalone/apps/frontend/.next/ && cp -r apps/frontend/.next/static apps/frontend/.next/standalone/apps/frontend/.next/static && (cp -r apps/frontend/public apps/frontend/.next/standalone/apps/frontend/public || true) && mkdir -p apps/admin/.next/standalone/apps/admin/.next/ && cp -r apps/admin/.next/static apps/admin/.next/standalone/apps/admin/.next/static && (cp -r apps/admin/public apps/admin/.next/standalone/apps/admin/public || true)",
     "lint": "pnpm -r lint",
     "type-check": "pnpm -r type-check",
     "prisma:generate": "prisma generate --schema=./prisma/schema.prisma",
