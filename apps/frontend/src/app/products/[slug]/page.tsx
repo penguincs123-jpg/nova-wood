@@ -1,5 +1,7 @@
 import React from 'react';
 import Image from 'next/image';
+import CartButton from '../../components/CartButton';
+import WishlistButton from '../../components/WishlistButton';
 
 interface ProductTranslation {
   name: string;
@@ -180,10 +182,33 @@ export default async function ProductDetailPage({
             </span>
           </div>
 
-          {/* ADD TO CART ACTION */}
-          <button className="btn btn-primary" style={{ padding: '16px 40px', width: '100%', maxWidth: '300px', fontSize: '18px', marginBottom: '40px' }}>
-            {t.addToCart}
-          </button>
+          {/* ACTION BUTTONS (ADD TO CART & WISHLIST) */}
+          <div className="flex items-center gap-4" style={{ marginBottom: '40px' }}>
+            <CartButton
+              product={{
+                productId: product.id,
+                slug: product.slug,
+                name: tInfo.name,
+                sku: product.sku,
+                price: product.salePrice || product.basePrice,
+                imageUrl: product.images[0]?.url || 'https://images.unsplash.com/photo-1505797149-43b0069ec26b?q=80&w=300',
+              }}
+              label={t.addToCart}
+              className="btn btn-primary"
+            />
+            <WishlistButton
+              product={{
+                productId: product.id,
+                slug: product.slug,
+                name: tInfo.name,
+                sku: product.sku,
+                price: product.salePrice || product.basePrice,
+                imageUrl: product.images[0]?.url || 'https://images.unsplash.com/photo-1505797149-43b0069ec26b?q=80&w=300',
+              }}
+              className="btn btn-secondary"
+              style={{ height: '48px', width: '48px', padding: 0, fontSize: '20px', display: 'flex', alignItems: 'center', justifyContent: 'center' }}
+            />
+          </div>
 
           {/* INFO TABS */}
           <div className="product-tabs" style={{ display: 'flex', flexDirection: 'column', gap: '24px', paddingTop: '24px', borderTop: '1.5px solid var(--gray-100)' }}>

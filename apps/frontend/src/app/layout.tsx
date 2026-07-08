@@ -1,6 +1,10 @@
 import type { Metadata } from 'next';
 import './globals.css';
 import React from 'react';
+import { CartProvider } from './context/CartContext';
+import { WishlistProvider } from './context/WishlistContext';
+import SearchBar from './components/SearchBar';
+import HeaderActions from './components/HeaderActions';
 
 // Fetch public settings from backend at build/request time
 async function getPublicSettings() {
@@ -141,88 +145,84 @@ export default async function RootLayout({
         />
       </head>
       <body>
-        {/* PREMIUM NAVIGATION HEADER */}
-        <header className="site-header">
-          <div className="container header-container">
-            <div className="logo-group">
-              <a href="/" className="logo-text">
-                {settings['site.name'] || 'Nova Wood'}
-              </a>
-              <span className="tagline">{settings['site.tagline']}</span>
-            </div>
+        <CartProvider>
+          <WishlistProvider>
+            {/* PREMIUM NAVIGATION HEADER */}
+            <header className="site-header">
+              <div className="container header-container">
+                <div className="logo-group">
+                  <a href="/" className="logo-text">
+                    {settings['site.name'] || 'Nova Wood'}
+                  </a>
+                  <span className="tagline">{settings['site.tagline']}</span>
+                </div>
 
-            <div className="search-bar">
-              <input type="text" placeholder={t.searchPlaceholder} />
-              <button aria-label="Search" className="search-btn">🔍</button>
-            </div>
+                <SearchBar placeholder={t.searchPlaceholder} />
 
-            <nav className="nav-menu">
-              <a href="/">{t.home}</a>
-              <a href="/products?category=office-furniture">{t.office}</a>
-              <a href="/products?category=living-room">{t.living}</a>
-              <a href="/products?category=bedroom">{t.bedroom}</a>
-              <a href="/products?category=dining-room">{t.dining}</a>
-            </nav>
+                <nav className="nav-menu">
+                  <a href="/">{t.home}</a>
+                  <a href="/products?category=office-furniture">{t.office}</a>
+                  <a href="/products?category=living-room">{t.living}</a>
+                  <a href="/products?category=bedroom">{t.bedroom}</a>
+                  <a href="/products?category=dining-room">{t.dining}</a>
+                </nav>
 
-            <div className="header-actions">
-              <a href="/wishlist" className="icon-btn" aria-label="Wishlist">❤️</a>
-              <a href="/cart" className="icon-btn" aria-label="Cart">🛒</a>
-              <a href="/account" className="icon-btn" aria-label="Account">👤</a>
-            </div>
-          </div>
-        </header>
-
-        {/* MAIN STOREFRONT CONTENT */}
-        <main className="main-content">
-          {children}
-        </main>
-
-        {/* PREMIUM FOOTER */}
-        <footer className="site-footer">
-          <div className="container footer-grid">
-            <div className="footer-col">
-              <h3 className="footer-title">{settings['site.name'] || 'Nova Wood'}</h3>
-              <p className="footer-desc">{settings['seo.defaultDescription']}</p>
-              {settings['site.phone'] && <p className="footer-info">📞 {settings['site.phone']}</p>}
-              {settings['site.email'] && <p className="footer-info">✉️ {settings['site.email']}</p>}
-            </div>
-
-            <div className="footer-col">
-              <h3 className="footer-title">Quick Links</h3>
-              <ul className="footer-links">
-                <li><a href="/about">About Us</a></li>
-                <li><a href="/faq">FAQ</a></li>
-                <li><a href="/terms">Terms & Conditions</a></li>
-                <li><a href="/privacy">Privacy Policy</a></li>
-              </ul>
-            </div>
-
-            <div className="footer-col">
-              <h3 className="footer-title">{t.newsletter}</h3>
-              <div className="newsletter-form">
-                <input type="email" placeholder="email@example.com" />
-                <button className="btn btn-primary">{t.subscribe}</button>
+                <HeaderActions />
               </div>
-            </div>
-          </div>
+            </header>
 
-          <div className="footer-bottom">
-            <div className="container flex items-center justify-between">
-              <p>{t.copyright}</p>
-              {settings['social.whatsapp'] && (
-                <a
-                  href={`https://wa.me/${settings['social.whatsapp']}`}
-                  className="whatsapp-float"
-                  target="_blank"
-                  rel="noreferrer"
-                >
-                  🟢 {t.whatsapp}
-                </a>
-              )}
-            </div>
-          </div>
-        </footer>
+            {/* MAIN STOREFRONT CONTENT */}
+            <main className="main-content">
+              {children}
+            </main>
 
+            {/* PREMIUM FOOTER */}
+            <footer className="site-footer">
+              <div className="container footer-grid">
+                <div className="footer-col">
+                  <h3 className="footer-title">{settings['site.name'] || 'Nova Wood'}</h3>
+                  <p className="footer-desc">{settings['seo.defaultDescription']}</p>
+                  {settings['site.phone'] && <p className="footer-info">📞 {settings['site.phone']}</p>}
+                  {settings['site.email'] && <p className="footer-info">✉️ {settings['site.email']}</p>}
+                </div>
+
+                <div className="footer-col">
+                  <h3 className="footer-title">Quick Links</h3>
+                  <ul className="footer-links">
+                    <li><a href="/pages/about">About Us</a></li>
+                    <li><a href="/faq">FAQ</a></li>
+                    <li><a href="/terms">Terms & Conditions</a></li>
+                    <li><a href="/privacy">Privacy Policy</a></li>
+                  </ul>
+                </div>
+
+                <div className="footer-col">
+                  <h3 className="footer-title">{t.newsletter}</h3>
+                  <div className="newsletter-form">
+                    <input type="email" placeholder="email@example.com" />
+                    <button className="btn btn-primary">{t.subscribe}</button>
+                  </div>
+                </div>
+              </div>
+
+              <div className="footer-bottom">
+                <div className="container flex items-center justify-between">
+                  <p>{t.copyright}</p>
+                  {settings['social.whatsapp'] && (
+                    <a
+                      href={`https://wa.me/${settings['social.whatsapp']}`}
+                      className="whatsapp-float"
+                      target="_blank"
+                      rel="noreferrer"
+                    >
+                      🟢 {t.whatsapp}
+                    </a>
+                  )}
+                </div>
+              </div>
+            </footer>
+          </WishlistProvider>
+        </CartProvider>
       </body>
     </html>
   );
